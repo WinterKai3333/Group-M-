@@ -4,6 +4,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" type="text/css" href="styles.css">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+
 
     <!-- Including jQuery. -->
    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
@@ -16,7 +18,7 @@
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 
     <!-- Openrouteservice api -->
-    <script src="openrouteservice-js-master/dist/ors-js-client.js"></script>
+    <script src="openrouteservice-js-main/dist/ors-js-client.js"></script>
 
     <title>Campus Nav</title>
 
@@ -31,7 +33,6 @@
         <input type="text" id="From" placeholder="From" >
         <div id="displayFrom"></div>
         <!-- <div id="from-dropdown"></div> -->
-
 
         <input type="text" id="To" placeholder="To" >
         <div id="displayTo"></div>
@@ -48,6 +49,8 @@
         var color = '#0000FF';
         return color;
       }
+
+      var routeLayer;
 
       var map = L.map('map', {
         center: [2.94444,101.87603],
@@ -180,26 +183,99 @@
             
       }        
 
-      // TODO : Routing
+      //TODO : Routing
+      // console.log('fromLocation:', fromLocation);
+      // console.log('toLocation:', toLocation);
 
-      function calculateRoute(Value,longitude,latitude,buildingPolygon, routingLongiutde, routingLatitude)
-      {
 
-        console.log("---------CALCUALTE ROUTE FUNCTION-------------");
-        console.log("Value : ", Value);
-        console.log("Longitude : ", longitude);
-        console.log("Latitude : ", latitude);
-        console.log("Polygon : ", buildingPolygon);
-        console.log("Routing Longitude : ", routingLongiutde);
-        console.log("Routing Latitude : ", routingLatitude);
-        console.log("---------END CALCULATE ROUTE FUNCTION-------------");
+      function calculateRoute() {
+        var fromID = document.getElementById('From').value;
+        var toID = document.getElementById('To').value;
+
+        if (!fromID || !toID) {
+        alert('Please enter both starting and ending locations.');
+        return;
+        }
+
+        //AJAX request getLonLan.php, get coordinates of starting location
+        $.ajax({
+
+          type: 'POST',
+          url: 'getLonLat.php',
+          data: {
+              coord: fromID,
+              identifier: 'from'
+          },
+          success: function (fromData) {
+            var startCoordinates = [fromData.Latitude, fromData.Longitude];
+
+            //AJAX request getLonLan.php, get coordinates for the ending location
+            $.ajax({
+              type: 'POST',
+              url: 'getLonLat.php',
+              data: {
+                  coord: toID,
+                  identifier: 'to'
+              },
+              success: function (toData) {
+                var endCoordinates = [toData.Latitude, toData.Longitude];
+                var apiKey = '5b3ce3597851110001cf624835685b37ed9340fca4231c375edaec47';
+
+                //testing for polyline
+                // var myRoute = [startCoordinates, [1.0,1.0], endCoordinates]; 
+
+                // if (routeLayer){
+                //   map.removeLayer(routeLayer);
+                // }
+
+                // routeLayer = L.polyline(myRoute, {color: routeBlueColor() }).addTo(map);
+                // map.setZoom(16);
+                // map.fitBounds(routeLayer.getBounds());
+
+                //requesting to the ors api
+                axios.get(`https://api.openrouteservice.org/v2/directions/foot-walking?api_key=${apiKey}&start=${startCoordinates[1]},${startCoordinates[0]}&end=${endCoordinates[1]},${endCoordinates[0]}`)
+                  .then(response => {
+                    console.log('API response: ', response.data);
+                    var route = response.data.features[0].geometry.coordinates.map(coord => [coord[1], coord[0]]);
+                          
+                    //Clearing previous layer
+                    if (routeLayer) {
+                      map.removeLayer(routeLayer);
+                    }
+
+                   //Adding new layer
+                    routeLayer = L.polyline(route, { color: routeBlueColor() }).addTo(map);
+
+                    //Setting zoom for the map
+                    map.setZoom(16);
+                    map.fitBounds(routeLayer.getBounds());
+                  })
+                  .catch(error => {
+                    console.error('Error fetching route:', error);
+                  });
+              },
+              error: function (error) {
+                console.error('Error fetching coordinates for the ending location:', error);
+              }
+            });
+          },
+          error: function (error) {
+            console.error('Error fetching coordinates for the starting location:', error);
+          }
+        });
+
+        // console.log("---------CALCUALTE ROUTE FUNCTION-------------");
+        //console.log("Value : ", Value);
+        // console.log("Longitude : ", longitude);
+        // console.log("Latitude : ", latitude);
+        // console.log("Polygon : ", buildingPolygon);
+        // console.log("Routing Longitude : ", routingLongiutde);
+        // console.log("Routing Latitude : ", routingLatitude);
+        // console.log("---------END CALCULATE ROUTE FUNCTION-------------");
 
       }
-
     </script>
     
 </body>
 </html>
-
-
 
