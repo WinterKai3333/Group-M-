@@ -150,6 +150,11 @@
 
           fromPolygonLayer = L.geoJSON(parsedFromLocation).addTo(map);
           map.fitBounds(L.geoJSON(parsedFromLocation).getBounds());
+
+          if (routeLayer){  //clear route if its drawn on the map
+            map.removeLayer(routeLayer);
+            routeLayer = null;
+          }
                 
         }
           
@@ -181,6 +186,11 @@
 
           toPolygonLayer = L.geoJSON(parsedToLocation).addTo(map);
           map.fitBounds(L.geoJSON(parsedToLocation).getBounds());
+
+          if (routeLayer){  //clear the current route if its drawn on the map 
+            map.removeLayer(routeLayer);
+            routeLayer = null;
+          }
 
         }
             
